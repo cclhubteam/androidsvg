@@ -16,6 +16,7 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
     private SVG svg;
     private GestureDetector gestureDetector;
     private SVGTouchListener svgTouchlistener;
+    private SVGRenderedCallback svgRenderedCallback;
 
     private static Point getPointForEvent(MotionEvent event) {
         int rawX = (int) event.getX();
@@ -37,17 +38,31 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
     }
 
     @Override
-    public void setSVG(SVG svg) {
+    public void setSVG(final SVG svg) {
         if (svg == null) {
             throw new IllegalArgumentException("SVG can not be null");
         }
 
         this.svg = svg;
 
-        Bitmap bitmap = Bitmap.createBitmap((int) Math.ceil(svg.getDocumentWidth()), (int) Math.ceil(svg.getDocumentHeight()), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        svg.renderToCanvas(canvas);
-        setImageBitmap(bitmap);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final Bitmap bitmap = Bitmap.createBitmap((int) Math.ceil(svg.getDocumentWidth()),
+                        (int) Math.ceil(svg.getDocumentHeight()),
+                        Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmap);
+                svg.renderToCanvas(canvas);
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        setImageBitmap(bitmap);
+                        svgRenderedCallback.onSVGRendered();
+                    }
+                });
+            }
+        }).start();
+
     }
 
     public void setSVGTouchListener(SVGTouchListener listener) {
@@ -82,18 +97,21 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
         return true;
     }
 
-    public interface SVGTouchListener {
-        void onSVGObjectTouchUp(List<SVG.SvgObject> list, Point point);
+    public void setSVGRenderedCallback(SVGRenderedCallback svgRenderedCallback) {
+        this.svgRenderedCallback = svgRenderedCallback;
+    }
 
-        void onSVGObjectLongPress(Point point);
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-        void onSVGObjectTouch(List<SVG.SvgObject> objectList, Point touchPoint);
+        if (svg != null) {
+            svg.initShapesWithOffset(getWidth());
+        }
 
-        void onSVGObjectMove(Point point);
     }
 
     private class SVGGestureListener extends GestureDetector.SimpleOnGestureListener {
-
         @Override
         public void onLongPress(MotionEvent e) {
             if (svg != null && svgTouchlistener != null) {
@@ -113,14 +131,17 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
         }
     }
 
+    public interface SVGTouchListener {
+        void onSVGObjectTouchUp(List<SVG.SvgObject> list, Point point);
 
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        void onSVGObjectLongPress(Point point);
 
-        if (svg != null) {
-            svg.initShapesWithOffset(getWidth());
-        }
+        void onSVGObjectTouch(List<SVG.SvgObject> objectList, Point touchPoint);
 
+        void onSVGObjectMove(Point point);
+    }
+
+    public interface SVGRenderedCallback {
+        void onSVGRendered();
     }
 }
