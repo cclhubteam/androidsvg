@@ -1795,15 +1795,17 @@ public class SVG
 
       @Override
       public float[] getXYPointsArray() {
+         float xValue = getX() == null ? 0 : getX().floatValue();
+         float yValue = getY() == null ? 0 : getY().floatValue();
          float[] points = new float[] {
-                 getX().floatValue(),
-                 getY().floatValue(),
-                 getX().add(getWidth()),
-                 getY().floatValue(),
-                 getX().add(getWidth()),
-                 getY().add(getHeight()),
-                 getX().floatValue(),
-                 getY().add(getHeight())
+                 xValue,
+                 yValue,
+                 xValue + getWidth().floatValue(),
+                 yValue,
+                 xValue + getWidth().floatValue(),
+                 yValue + getHeight().floatValue(),
+                 xValue,
+                 yValue + getHeight().floatValue()
          };
          return points;
       }
