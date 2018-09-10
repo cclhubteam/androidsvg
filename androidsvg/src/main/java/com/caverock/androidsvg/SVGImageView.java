@@ -4,12 +4,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Point;
+import android.os.Build;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityManager;
 
 import java.util.List;
+
+import static android.content.Context.ACCESSIBILITY_SERVICE;
 
 public class SVGImageView extends SVGBaseImageView implements View.OnTouchListener {
 
@@ -17,6 +22,9 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
     private GestureDetector gestureDetector;
     private SVGTouchListener svgTouchlistener;
     private SVGRenderedCallback svgRenderedCallback;
+
+    private AccessibilityManager mAccessibilityManager;
+    private String contentDescription;
 
     private static Point getPointForEvent(MotionEvent event) {
         int rawX = (int) event.getX();
@@ -37,6 +45,10 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
         super(context, attrs, defStyle);
     }
 
+    public void setContentDescription(String contentDescription) {
+        this.contentDescription = contentDescription;
+    }
+
     @Override
     public void setSVG(final SVG svg) {
         if (svg == null) {
@@ -44,6 +56,8 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
         }
 
         this.svg = svg;
+
+        this.mAccessibilityManager = (AccessibilityManager) getContext().getSystemService(ACCESSIBILITY_SERVICE);
 
         new Thread(new Runnable() {
             @Override
@@ -69,6 +83,17 @@ public class SVGImageView extends SVGBaseImageView implements View.OnTouchListen
         svgTouchlistener = listener;
         gestureDetector = new GestureDetector(getContext(), new SVGGestureListener());
         setOnTouchListener(this);
+    }
+
+    @Override
+    public boolean onHoverEvent(MotionEvent event) {
+        if (mAccessibilityManager != null && mAccessibilityManager.isTouchExplorationEnabled()) {
+            if (!TextUtils.isEmpty(contentDescription))
+                announceForAccessibility(contentDescription);
+            return onTouchEvent(event);
+        } else {
+            return super.onHoverEvent(event);
+        }
     }
 
     @Override
