@@ -14,10 +14,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
-    
-    test {
-        exclude '**/*'
-    }
 
     dependencies {
         testCompile 'junit:junit:4.12'
