@@ -3886,7 +3886,7 @@ class SVGAndroidRenderer
    private void  clipStatePush()
    {
       // Save matrix and clip
-      canvas.save(Canvas.MATRIX_SAVE_FLAG);
+      canvas.save();
       // Save style state
       stateStack.push(state);
       state = new RendererState(state);
